@@ -309,11 +309,11 @@ export const DESIGN_PROJECTS: CaseStudyProject[] = [
       designDecisions:
         'Removed guest checkout and student-ID requirements to eliminate friction while keeping bookings accountable, and unified the interactive seat map across desktop and mobile with unmistakable Available / Selected / Taken states.',
       screens:
-        'Designed complete desktop and mobile screen sets in Figma with clickable prototypes covering both seat booking and parcel dispatch. [PLACEHOLDER: Screenshots IMG-02 to IMG-06 ready to attach]',
+        'Designed complete desktop and mobile screen sets in Figma with clickable prototypes covering landing & route search, unified seat selection, Paystack payment, live Mapbox tracking, and booking confirmation.',
       buildAndTech:
         'Built and deployed on Next.js, Tailwind CSS, and Supabase with email authentication, Paystack test-mode checkout, Mapbox route tracking, optional live location sharing, and database-level seat locking to prevent double bookings.',
       whatNext:
-        'Attach production screenshots (IMG-02 to IMG-06) and continue iterating with real commuter and dispatcher feedback.',
+        'Continue iterating on commuter booking speed and dispatcher workflows using real trip feedback.',
     },
     panelPosition: [-3.3, 2.35, -1.5],
     panelRotation: [0, 0.24, 0],

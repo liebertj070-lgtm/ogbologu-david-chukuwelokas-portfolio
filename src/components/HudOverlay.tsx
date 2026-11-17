@@ -501,7 +501,7 @@ export function HudOverlay({
             <button
               type="button"
               onClick={() => setHudMinimized((v) => !v)}
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-white/12 bg-[#0D0F14]/90 px-3 text-xs font-medium text-zinc-200 transition-colors hover:border-[#4DE1FF]/60 hover:text-white"
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-white/12 bg-[#0D0F14]/90 px-3 text-xs font-medium text-zinc-200 transition-colors hover:border-[#4DE1FF]/60 hover:text-white whitespace-nowrap shrink-0"
               aria-pressed={hudMinimized}
             >
               {hudMinimized ? (
