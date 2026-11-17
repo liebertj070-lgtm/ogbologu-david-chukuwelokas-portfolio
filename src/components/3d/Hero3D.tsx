@@ -98,8 +98,8 @@ function createLetterGeometry(letter: 'J' | 'O' | 'H' | 'A' | 'N'): THREE.Extrud
     bevelEnabled: true,
     bevelThickness: 0.045,
     bevelSize: 0.035,
-    bevelSegments: 3,
-    curveSegments: 16,
+    bevelSegments: 2,
+    curveSegments: 10,
   });
   geo.center();
   geo.computeVertexNormals();
@@ -155,10 +155,8 @@ export function Hero3D({ reducedMotion }: Hero3DProps) {
 
   return (
     <group position={[0, 0, 15.2]}>
-      {/* Orange & Cyan hero rim lights */}
-      <pointLight ref={sweepRimRef} position={[0, 3.2, 3.4]} color="#FF6A1A" intensity={22} distance={15} decay={2} />
-      <pointLight position={[-5.2, 3.4, -1.4]} color="#4DE1FF" intensity={18} distance={14} decay={2} />
-      <pointLight position={[5.2, 1.6, 2.2]} color="#FF6A1A" intensity={12} distance={12} decay={2} />
+      {/* Dynamic sweeping rim light (RoomEnvironment IBL handles surrounding fill) */}
+      <pointLight ref={sweepRimRef} position={[0, 3.2, 3.4]} color="#FF6A1A" intensity={24} distance={16} decay={2} />
 
       {/* Heavy industrial steel plinth */}
       <group position={[0, 0, 0]}>

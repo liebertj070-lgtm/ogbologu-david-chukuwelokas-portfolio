@@ -104,7 +104,6 @@ function GlassProjectScreen({
     groupRef.current.scale.set(s, s, s);
   });
 
-  const useTransmission = !isSoftwareGl && quality === 'high';
   const accentColor = project.id === 'kelvjessia' ? '#FF6A1A' : '#4DE1FF';
 
   return (
@@ -126,20 +125,17 @@ function GlassProjectScreen({
         onSelect();
       }}
     >
-      {/* Optical glass backing slab */}
+      {/* Optical glass backing slab (zero extra transmission render pass) */}
       <mesh castShadow>
         <boxGeometry args={[4.1, 2.75, 0.08]} />
         <meshPhysicalMaterial
           color="#D9ECFF"
-          metalness={0.05}
-          roughness={0.08}
-          transmission={useTransmission ? 0.82 : 0}
+          metalness={0.08}
+          roughness={0.06}
           transparent
-          opacity={useTransmission ? 1 : 0.24}
-          thickness={0.4}
-          ior={1.5}
+          opacity={0.22}
           clearcoat={1}
-          clearcoatRoughness={0.06}
+          clearcoatRoughness={0.05}
         />
       </mesh>
 
@@ -219,10 +215,6 @@ export function DesignZone({
 
   return (
     <group>
-      {/* Zone lighting */}
-      <pointLight position={[-3.5, 4.2, -0.5]} color="#FF6A1A" intensity={14} distance={13} decay={2} />
-      <pointLight position={[3.5, 4.2, -2.5]} color="#4DE1FF" intensity={14} distance={13} decay={2} />
-
       {/* Project Glass Panels */}
       {DESIGN_PROJECTS.map((project) => (
         <GlassProjectScreen

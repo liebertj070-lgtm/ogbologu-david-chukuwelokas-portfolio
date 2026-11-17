@@ -3,13 +3,9 @@ import { Canvas, useThree } from '@react-three/fiber';
 import {
   Bloom,
   ChromaticAberration,
-  DepthOfField,
   EffectComposer,
-  Noise,
-  SMAA,
   Vignette,
 } from '@react-three/postprocessing';
-import { BlendFunction } from 'postprocessing';
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
@@ -80,13 +76,11 @@ function StudioEnvironmentSetup({
 function PostProcessingRig({
   quality,
   isSoftwareGl,
-  hasFocus,
 }: {
   quality: ResolvedQuality;
   isSoftwareGl: boolean;
-  hasFocus: boolean;
 }) {
-  const caOffset = useMemo(() => new THREE.Vector2(0.00055, 0.00055), []);
+  const caOffset = useMemo(() => new THREE.Vector2(0.00045, 0.00045), []);
 
   if (isSoftwareGl || quality === 'low') {
     return null;
@@ -95,24 +89,17 @@ function PostProcessingRig({
   if (quality === 'medium') {
     return (
       <EffectComposer multisampling={0}>
-        <Bloom intensity={0.65} luminanceThreshold={0.9} mipmapBlur />
-        <Vignette eskil={false} offset={0.18} darkness={0.55} />
+        <Bloom intensity={0.58} luminanceThreshold={0.9} mipmapBlur />
+        <Vignette eskil={false} offset={0.18} darkness={0.52} />
       </EffectComposer>
     );
   }
 
   return (
     <EffectComposer multisampling={0}>
-      <SMAA />
-      <Bloom intensity={0.78} luminanceThreshold={0.88} mipmapBlur />
-      <DepthOfField
-        focusDistance={hasFocus ? 0.015 : 0.04}
-        focalLength={hasFocus ? 0.035 : 0.018}
-        bokehScale={hasFocus ? 3.2 : 1.1}
-      />
+      <Bloom intensity={0.72} luminanceThreshold={0.88} mipmapBlur />
       <ChromaticAberration offset={caOffset} radialModulation={false} modulationOffset={0.15} />
-      <Noise opacity={0.028} blendFunction={BlendFunction.SOFT_LIGHT} />
-      <Vignette eskil={false} offset={0.16} darkness={0.58} />
+      <Vignette eskil={false} offset={0.16} darkness={0.55} />
     </EffectComposer>
   );
 }
@@ -145,10 +132,12 @@ export function SceneRoot({
   const dpr: [number, number] = isSoftwareGl
     ? [1, 1]
     : isMobile
-      ? [1, 1.5]
+      ? [1, 1.25]
       : quality === 'low'
-        ? [1, 1.25]
-        : [1, 2];
+        ? [1, 1.15]
+        : quality === 'medium'
+          ? [1, 1.35]
+          : [1, 1.5];
 
   return (
     <div className="fixed inset-0 z-0 h-full w-full">
@@ -201,11 +190,7 @@ export function SceneRoot({
             onDownloadCv={onDownloadCv}
             onHoverLabel={onHoverLabel}
           />
-          <PostProcessingRig
-            quality={quality}
-            isSoftwareGl={isSoftwareGl}
-            hasFocus={Boolean(focusTarget)}
-          />
+          <PostProcessingRig quality={quality} isSoftwareGl={isSoftwareGl} />
         </Suspense>
       </Canvas>
     </div>

@@ -172,9 +172,10 @@ export function BuildZone({
     codeTex1.offset.y = (codeTex1.offset.y - delta * 0.08) % 1;
     codeTex2.offset.y = (codeTex2.offset.y - delta * 0.065) % 1;
 
-    // Dock skill chips smoothly toward the monoliths as camera enters Zone 2 (~0.40 - 0.56)
+    // Dock skill chips smoothly toward the monoliths only when near Zone 2
     if (chipsGroupRef.current) {
       const p = scrollProgressRef.current;
+      if (Math.abs(p - 0.49) > 0.34) return;
       const inBuild = THREE.MathUtils.clamp(1 - Math.abs(p - 0.49) / 0.14, 0, 1);
       const t = state.clock.elapsedTime;
 
@@ -192,8 +193,6 @@ export function BuildZone({
 
   return (
     <group position={[0, 0, -21]}>
-      <pointLight position={[-4.2, 4.2, 2.5]} color="#4DE1FF" intensity={18} distance={14} decay={2} />
-      <pointLight position={[4.2, 4.2, 1.5]} color="#FF6A1A" intensity={16} distance={14} decay={2} />
 
       {/* Left Code Monolith (grounded at Y=0) */}
       <group position={[-4.6, 0, -1]} rotation={[0, 0.25, 0]}>

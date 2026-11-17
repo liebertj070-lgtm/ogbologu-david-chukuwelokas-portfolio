@@ -339,3 +339,181 @@ export function createCodeMonolithTexture(title: string, lines: string[], accent
   tex.wrapT = THREE.RepeatWrapping;
   return tex;
 }
+
+/** Procedural high-contrast A4 CV document texture for the finale studio tables */
+export function createCvSheetTexture(variant: 'uiux' | 'video', maxAnisotropy = 4) {
+  const w = 512;
+  const h = 724;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d')!;
+
+  const accent = variant === 'uiux' ? '#FF6A1A' : '#0284C7';
+  const badgeLabel = variant === 'uiux' ? 'UI/UX & FRONTEND CV · PDF' : 'VIDEO, AI & GRAPHICS CV · PDF';
+
+  // Crisp ivory paper stock
+  ctx.fillStyle = '#F7F5F0';
+  ctx.fillRect(0, 0, w, h);
+
+  // Top accent rule
+  ctx.fillStyle = accent;
+  ctx.fillRect(0, 0, w, 12);
+
+  // Subtle paper border
+  ctx.strokeStyle = 'rgba(15, 23, 42, 0.12)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, w - 2, h - 2);
+
+  // Header
+  ctx.fillStyle = '#0F172A';
+  ctx.font = '800 24px "Syne", sans-serif';
+  ctx.fillText('OGBOLOGU DAVID C.', 34, 56);
+
+  ctx.fillStyle = accent;
+  ctx.font = '600 13px "JetBrains Mono", monospace';
+  ctx.fillText(
+    variant === 'uiux'
+      ? 'UI/UX DESIGNER · FIGMA · DESIGN-TO-CODE'
+      : 'AI CONTENT CREATOR · VIDEO EDITOR · GRAPHICS',
+    34,
+    80
+  );
+
+  ctx.fillStyle = '#475569';
+  ctx.font = '400 11px "Inter", sans-serif';
+  ctx.fillText('Lagos, Nigeria  |  07077348537  |  liebertj070@gmail.com', 34, 100);
+
+  // Divider
+  ctx.fillStyle = '#CBD5E1';
+  ctx.fillRect(34, 114, w - 68, 1.5);
+
+  const drawSection = (title: string, y: number, lines: string[]) => {
+    ctx.fillStyle = accent;
+    ctx.font = '700 12px "JetBrains Mono", monospace';
+    ctx.fillText(title, 34, y);
+    ctx.fillStyle = '#1E293B';
+    ctx.font = '400 12px "Inter", sans-serif';
+    let cy = y + 22;
+    for (const line of lines) {
+      ctx.fillText(line, 34, cy);
+      cy += 20;
+    }
+    return cy + 14;
+  };
+
+  let nextY = 142;
+  if (variant === 'uiux') {
+    nextY = drawSection('PROFILE', nextY, [
+      'Computer Science student & UI/UX designer building',
+      'from Figma flows & prototypes to Next.js production.',
+    ]);
+    nextY = drawSection('SELECTED PROJECTS', nextY, [
+      '• Kelvjessia Transport — Figma + Next.js + Supabase',
+      '• Food Delivery App — Competitive UX & Prototype',
+      '• JUTIMA Retail System — MySQL + Node.js/Express',
+    ]);
+    nextY = drawSection('DESIGN & TECH STACK', nextY, [
+      'Figma, Wireframing, User Flows, Responsive UI,',
+      'Next.js, Tailwind CSS, Supabase, MySQL, Git/GitHub',
+    ]);
+    drawSection('EXPERIENCE', nextY, [
+      '• Intern — Naval Dockyard Limited (Jul 2026–Present)',
+      '• B.Sc. Computer Science — Augustine University',
+    ]);
+  } else {
+    nextY = drawSection('PROFILE', nextY, [
+      'Creative technologist producing documentary video,',
+      'AI-assisted storytelling, and branded event visuals.',
+    ]);
+    nextY = drawSection('VIDEO, AI & DESIGN TOOLS', nextY, [
+      '• DaVinci Resolve, CapCut, Pacing & Text Motion',
+      '• ChatGPT, Veo, ElevenLabs, AI33Pro, Prompt Eng.',
+      '• Adobe Photoshop & Canva — Posters & Flyers',
+    ]);
+    nextY = drawSection('EXPERIENCE & SERIES', nextY, [
+      '• Naval Dockyard Documentary & Event Graphics',
+      '• First Man on the Sun · Megan’s Bakery (TikTok)',
+    ]);
+    drawSection('EDUCATION', nextY, [
+      'B.Sc. Computer Science — Augustine University (2027)',
+    ]);
+  }
+
+  // Footer PDF Action Pill
+  ctx.fillStyle = '#0F172A';
+  ctx.fillRect(34, h - 72, w - 68, 40);
+  ctx.fillStyle = accent;
+  ctx.fillRect(34, h - 72, 8, 40);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = '700 13px "JetBrains Mono", monospace';
+  ctx.fillText(badgeLabel, 56, h - 47);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = maxAnisotropy;
+  return tex;
+}
+
+/** Procedural golden-hour harbour sky & water reflection backdrop (zero external textures) */
+export function createHarbourBackdropTexture() {
+  const w = 512;
+  const h = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d')!;
+
+  // Dusk-to-amber sky (top 68%)
+  const horizonY = Math.floor(h * 0.68);
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
+  skyGrad.addColorStop(0, '#090D18');
+  skyGrad.addColorStop(0.38, '#1E213A');
+  skyGrad.addColorStop(0.68, '#7C383B');
+  skyGrad.addColorStop(0.88, '#DC6B2E');
+  skyGrad.addColorStop(1, '#FFC478');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, w, horizonY);
+
+  // Soft setting sun radial bloom near center-right
+  const sunX = w * 0.56;
+  const sunY = horizonY - 12;
+  const sunGrad = ctx.createRadialGradient(sunX, sunY, 4, sunX, sunY, 150);
+  sunGrad.addColorStop(0, 'rgba(255, 244, 214, 0.92)');
+  sunGrad.addColorStop(0.28, 'rgba(255, 178, 92, 0.45)');
+  sunGrad.addColorStop(1, 'rgba(255, 106, 26, 0)');
+  ctx.fillStyle = sunGrad;
+  ctx.fillRect(0, 0, w, horizonY);
+
+  // Atmospheric layered cloud wisps
+  ctx.fillStyle = 'rgba(22, 24, 40, 0.34)';
+  for (let i = 0; i < 8; i++) {
+    const cx = (i * 78 + 30) % w;
+    const cy = 28 + (i % 4) * 26;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 70 + (i % 3) * 25, 9 + (i % 2) * 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Harbour water reflection band (bottom 32%)
+  const waterGrad = ctx.createLinearGradient(0, horizonY, 0, h);
+  waterGrad.addColorStop(0, '#3C282B');
+  waterGrad.addColorStop(0.45, '#141B29');
+  waterGrad.addColorStop(1, '#080B12');
+  ctx.fillStyle = waterGrad;
+  ctx.fillRect(0, horizonY, w, h - horizonY);
+
+  // Shimmering golden-hour sun path ripples on the water
+  for (let y = horizonY + 3; y < h; y += 4) {
+    const t = (y - horizonY) / (h - horizonY);
+    const spread = 16 + t * 55;
+    const alpha = Math.max(0.08, 0.55 - t * 0.48);
+    ctx.fillStyle = `rgba(255, 176, 94, ${alpha})`;
+    ctx.fillRect(sunX - spread * 0.5 + Math.sin(y * 0.7) * 6, y, spread, 1.8);
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+

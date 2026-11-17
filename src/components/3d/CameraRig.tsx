@@ -35,8 +35,22 @@ export function CameraRig({
   const currentLook = useRef(new THREE.Vector3(...ZONE_WAYPOINTS[0].lookAt));
 
   const { posCurve, lookCurve } = useMemo(() => {
-    const posPoints = ZONE_WAYPOINTS.map((w) => new THREE.Vector3(...w.cameraPos));
-    const lookPoints = ZONE_WAYPOINTS.map((w) => new THREE.Vector3(...w.lookAt));
+    const posPoints: THREE.Vector3[] = [];
+    const lookPoints: THREE.Vector3[] = [];
+
+    for (const wp of ZONE_WAYPOINTS) {
+      if (wp.id === 'contact') {
+        // Approach forward past both experience banners toward the stairs ramp before rising into top view
+        posPoints.push(new THREE.Vector3(0, 2.45, -61.5));
+        lookPoints.push(new THREE.Vector3(0, 2.9, -71.5));
+
+        posPoints.push(new THREE.Vector3(0, 4.75, -67.8));
+        lookPoints.push(new THREE.Vector3(0, 3.45, -72.8));
+      }
+      posPoints.push(new THREE.Vector3(...wp.cameraPos));
+      lookPoints.push(new THREE.Vector3(...wp.lookAt));
+    }
+
     return {
       posCurve: new THREE.CatmullRomCurve3(posPoints, false, 'catmullrom', 0.45),
       lookCurve: new THREE.CatmullRomCurve3(lookPoints, false, 'catmullrom', 0.45),

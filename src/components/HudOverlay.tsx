@@ -12,7 +12,7 @@ import {
   Layers,
   Monitor,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   CREATE_MEDIA_ITEMS,
   DESIGN_PROJECTS,
@@ -30,7 +30,7 @@ import { QualityMenu } from './QualityMenu';
 
 interface HudOverlayProps {
   activeZone: ZoneId;
-  scrollProgress: number;
+  scrollProgressRef: React.MutableRefObject<number>;
   onJumpToZone: (zoneId: ZoneId) => void;
   onOpenProject: (project: CaseStudyProject) => void;
   onOpenMedia: (item: CreateMediaItem) => void;
@@ -49,7 +49,7 @@ interface HudOverlayProps {
 
 export function HudOverlay({
   activeZone,
-  scrollProgress,
+  scrollProgressRef,
   onJumpToZone,
   onOpenProject,
   onOpenMedia,
@@ -69,6 +69,7 @@ export function HudOverlay({
   const [hudMinimized, setHudMinimized] = useState(false);
   const [showLiveIframe, setShowLiveIframe] = useState(false);
   const [showJutimaDetail, setShowJutimaDetail] = useState(false);
+  const pctRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     if (reducedMotion) return;
@@ -77,6 +78,20 @@ export function HudOverlay({
     }, 2400);
     return () => clearInterval(timer);
   }, [reducedMotion]);
+
+  useEffect(() => {
+    let lastPct = -1;
+    const updatePct = () => {
+      const nextPct = Math.round(scrollProgressRef.current * 100);
+      if (nextPct !== lastPct && pctRef.current) {
+        lastPct = nextPct;
+        pctRef.current.textContent = `${nextPct}% · Scroll / ↑↓`;
+      }
+    };
+    updatePct();
+    window.addEventListener('scroll', updatePct, { passive: true });
+    return () => window.removeEventListener('scroll', updatePct);
+  }, [scrollProgressRef]);
 
   const topNavZones: ZoneId[] = ['hero', 'design', 'build', 'create', 'contact'];
   const portraitSlot = IMAGE_SLOTS['IMG-01'];
@@ -477,8 +492,8 @@ export function HudOverlay({
               );
             })}
             <div className="mt-1 h-px w-full bg-white/10" />
-            <span className="font-mono text-[10px] tabular-nums text-zinc-400">
-              {Math.round(scrollProgress * 100)}% · Scroll / ↑↓
+            <span ref={pctRef} className="font-mono text-[10px] tabular-nums text-zinc-400">
+              0% · Scroll / ↑↓
             </span>
           </div>
 

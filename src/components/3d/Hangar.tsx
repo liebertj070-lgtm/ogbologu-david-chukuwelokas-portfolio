@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { ResolvedQuality } from '../../types/portfolio';
-import { createWetConcreteTextures } from '../../utils/webgl';
+import { createHarbourBackdropTexture, createWetConcreteTextures } from '../../utils/webgl';
 
 interface HangarProps {
   quality: ResolvedQuality;
@@ -30,12 +30,15 @@ export function Hangar({ quality, isSoftwareGl, reducedMotion }: HangarProps) {
     return createWetConcreteTextures(aniso);
   }, [gl]);
 
+  const harbourSkyTex = useMemo(() => createHarbourBackdropTexture(), []);
+
   useEffect(() => {
     return () => {
       concrete.colorMap.dispose();
       concrete.roughnessMap.dispose();
+      harbourSkyTex.dispose();
     };
-  }, [concrete]);
+  }, [concrete, harbourSkyTex]);
 
   // Populate instanced steel ribs, overhead trusses, and gantry lamp strips
   useEffect(() => {
@@ -94,7 +97,7 @@ export function Hangar({ quality, isSoftwareGl, reducedMotion }: HangarProps) {
   }, []);
 
   // Floating dust motes + distant ember sparks
-  const particleCount = quality === 'high' ? 420 : quality === 'medium' ? 220 : 80;
+  const particleCount = quality === 'high' ? 240 : quality === 'medium' ? 140 : 60;
   const particleGeometry = useMemo(() => {
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
@@ -105,7 +108,7 @@ export function Hangar({ quality, isSoftwareGl, reducedMotion }: HangarProps) {
 
     for (let i = 0; i < particleCount; i++) {
       positions[i * 3] = (Math.random() - 0.5) * 18;
-      positions[i * 3 + 1] = 0.25 + Math.random() * 8.5;
+      positions[i * 3 + 1] = 0.3 + Math.random() * 8.2;
       positions[i * 3 + 2] = 30 - Math.random() * 106;
 
       const r = Math.random();
@@ -126,10 +129,9 @@ export function Hangar({ quality, isSoftwareGl, reducedMotion }: HangarProps) {
     };
   }, [particleGeometry]);
 
-  useFrame((state, rawDelta) => {
+  useFrame((state) => {
     if (reducedMotion) return;
     const t = state.clock.elapsedTime;
-    const delta = Math.min(rawDelta, 0.05);
 
     // Sweeping gantry searchlight
     if (sweepLightRef.current) {
@@ -147,15 +149,10 @@ export function Hangar({ quality, isSoftwareGl, reducedMotion }: HangarProps) {
       weldLightRef.current.intensity = burst > 0.45 ? 18 * burst : 0.4;
     }
 
-    // Gentle upward drift of dust motes
+    // Zero-buffer-upload ambient drift of dust motes
     if (particlesRef.current) {
-      const posAttr = particlesRef.current.geometry.getAttribute('position') as THREE.BufferAttribute;
-      for (let i = 0; i < particleCount; i++) {
-        let y = posAttr.getY(i) + delta * (0.06 + (i % 5) * 0.012);
-        if (y > 9.0) y = 0.25;
-        posAttr.setY(i, y);
-      }
-      posAttr.needsUpdate = true;
+      particlesRef.current.position.y = Math.sin(t * 0.35) * 0.28;
+      particlesRef.current.position.x = Math.cos(t * 0.22) * 0.18;
     }
   });
 
@@ -172,18 +169,22 @@ export function Hangar({ quality, isSoftwareGl, reducedMotion }: HangarProps) {
       <hemisphereLight args={['#4DE1FF', '#12151C', 0.52]} />
       <directionalLight
         position={[10, 16, 18]}
-        intensity={1.35}
+        intensity={1.45}
         color="#FFE2C8"
         castShadow={!isSoftwareGl && quality !== 'low'}
         shadow-mapSize-width={quality === 'high' ? 1024 : 512}
         shadow-mapSize-height={quality === 'high' ? 1024 : 512}
+        shadow-camera-left={-14}
+        shadow-camera-right={14}
+        shadow-camera-top={24}
+        shadow-camera-bottom={-80}
         shadow-bias={-0.0004}
         shadow-normalBias={0.02}
       />
 
-      {/* Sweeping gantry spotlight */}
+      {/* Sweeping gantry spotlight (high tier only to reduce per-pixel lighting passes) */}
       <primitive object={sweepTargetRef.current} />
-      {quality !== 'low' && (
+      {quality === 'high' && !isSoftwareGl && (
         <spotLight
           ref={sweepLightRef}
           position={[0, 9.5, -8]}
@@ -203,14 +204,14 @@ export function Hangar({ quality, isSoftwareGl, reducedMotion }: HangarProps) {
         <planeGeometry args={[28, 128]} />
         {useRealReflector ? (
           <MeshReflectorMaterial
-            blur={[280, 90]}
-            resolution={quality === 'high' ? 512 : 256}
-            mixBlur={0.85}
-            mixStrength={22}
+            blur={quality === 'high' ? [128, 36] : [0, 0]}
+            resolution={quality === 'high' ? 384 : 256}
+            mixBlur={0.75}
+            mixStrength={20}
             roughness={0.58}
             roughnessMap={concrete.roughnessMap}
             map={concrete.colorMap}
-            depthScale={0.45}
+            depthScale={0.4}
             minDepthThreshold={0.4}
             maxDepthThreshold={1.4}
             color="#1B1F28"
@@ -349,15 +350,100 @@ export function Hangar({ quality, isSoftwareGl, reducedMotion }: HangarProps) {
         </group>
       )}
 
-      {/* Distant Golden-Hour Harbour Backdrop at end of Hangar (Z = -84) */}
-      <mesh position={[0, 5.2, -84]}>
-        <planeGeometry args={[28, 12]} />
-        <meshBasicMaterial color="#FFB26B" />
+      {/* Back Hangar Bay Blast Doors (partially open framing the waterfront vista at Z = -78.2) */}
+      <group position={[0, 0, -78.2]}>
+        {/* Overhead steel door track */}
+        <mesh position={[0, 10.1, 0.25]}>
+          <boxGeometry args={[22.4, 0.45, 0.55]} />
+          <meshStandardMaterial color="#181C24" metalness={0.86} roughness={0.34} />
+        </mesh>
+        {/* Left & Right Heavy Steel Blast Doors */}
+        {[-8.9, 8.9].map((dx, idx) => (
+          <group key={idx} position={[dx, 5.1, 0]}>
+            <mesh>
+              <boxGeometry args={[6.6, 10.2, 0.36]} />
+              <meshStandardMaterial color="#12161E" metalness={0.76} roughness={0.48} />
+            </mesh>
+            {/* Inner vertical hazard trim */}
+            <mesh position={[idx === 0 ? 3.24 : -3.24, 0, 0.2]}>
+              <boxGeometry args={[0.14, 10.0, 0.06]} />
+              <meshStandardMaterial color="#FF6A1A" emissive="#FF6A1A" emissiveIntensity={0.7} />
+            </mesh>
+          </group>
+        ))}
+        {/* Amber Bay Threshold Beacons */}
+        {[-5.4, 5.4].map((bx, idx) => (
+          <mesh key={idx} position={[bx, 9.75, 0.4]}>
+            <boxGeometry args={[0.42, 0.14, 0.16]} />
+            <meshStandardMaterial color="#FFB26B" emissive="#FF6A1A" emissiveIntensity={2.2} toneMapped={false} />
+          </mesh>
+        ))}
+      </group>
+
+      {/* Distant Golden-Hour Harbour Sky & Shimmering Water Backdrop (Z = -92) */}
+      <mesh position={[0, 5.4, -92]}>
+        <planeGeometry args={[38, 17]} />
+        <meshBasicMaterial map={harbourSkyTex} fog={false} />
       </mesh>
-      <mesh position={[0, 3.6, -83.5]}>
-        <planeGeometry args={[28, 5.5]} />
-        <meshBasicMaterial color="#FF6A1A" transparent opacity={0.42} />
-      </mesh>
+
+      {/* Quay Wall & Distant Docked Naval / Cargo Vessel + Crane Silhouettes (Z = -85..-88) */}
+      <group position={[0, 0, -86.5]}>
+        {/* Harbour Quay Edge */}
+        <mesh position={[0, 0.45, 1.4]}>
+          <boxGeometry args={[34, 0.9, 1.2]} />
+          <meshStandardMaterial color="#0D1017" roughness={0.85} metalness={0.3} />
+        </mesh>
+
+        {/* Moored Vessel Silhouette */}
+        <group position={[-3.2, 0.85, -1.6]}>
+          <mesh position={[0, 0.55, 0]}>
+            <boxGeometry args={[9.4, 1.1, 1.4]} />
+            <meshStandardMaterial color="#0C1018" roughness={0.7} metalness={0.5} />
+          </mesh>
+          {/* Bridge Superstructure */}
+          <mesh position={[-2.2, 1.55, 0]}>
+            <boxGeometry args={[2.6, 1.2, 1.1]} />
+            <meshStandardMaterial color="#101520" roughness={0.65} metalness={0.5} />
+          </mesh>
+          {/* Mast & Aviation Beacon */}
+          <mesh position={[-2.0, 2.75, 0]}>
+            <boxGeometry args={[0.1, 1.5, 0.1]} />
+            <meshStandardMaterial color="#181F2E" metalness={0.8} roughness={0.3} />
+          </mesh>
+          <mesh position={[-2.0, 3.55, 0]}>
+            <boxGeometry args={[0.14, 0.14, 0.14]} />
+            <meshBasicMaterial color="#FF4D2E" />
+          </mesh>
+          {/* Warm Bridge Cabin Windows */}
+          {[-2.8, -2.2, -1.6].map((wx, i) => (
+            <mesh key={i} position={[wx, 1.72, 0.57]}>
+              <planeGeometry args={[0.32, 0.14]} />
+              <meshBasicMaterial color="#FFD08A" />
+            </mesh>
+          ))}
+        </group>
+
+        {/* Distant Shipyard Jib Cranes */}
+        {[
+          { x: 6.4, boomRot: 0.42 },
+          { x: 9.8, boomRot: -0.35 },
+        ].map((crane, idx) => (
+          <group key={idx} position={[crane.x, 0, -1.2]}>
+            <mesh position={[0, 3.4, 0]}>
+              <boxGeometry args={[0.48, 6.8, 0.48]} />
+              <meshStandardMaterial color="#0D121B" metalness={0.7} roughness={0.5} />
+            </mesh>
+            <mesh position={[-1.4, 6.6, 0]} rotation={[0, 0, crane.boomRot]}>
+              <boxGeometry args={[4.4, 0.24, 0.24]} />
+              <meshStandardMaterial color="#111722" metalness={0.7} roughness={0.48} />
+            </mesh>
+            <mesh position={[0, 6.95, 0]}>
+              <boxGeometry args={[0.16, 0.16, 0.16]} />
+              <meshBasicMaterial color="#FF5A2A" />
+            </mesh>
+          </group>
+        ))}
+      </group>
 
       {/* Floating Dust & Welding Spark Particles */}
       <points ref={particlesRef} geometry={particleGeometry}>

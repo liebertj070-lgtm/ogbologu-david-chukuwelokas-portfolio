@@ -1,5 +1,5 @@
 import Lenis from 'lenis';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SceneRoot } from './components/3d/SceneRoot';
 import { CaseStudyOverlay } from './components/CaseStudyOverlay';
 import { Cursor } from './components/Cursor';
@@ -12,6 +12,8 @@ import type { CaseStudyProject, CreateMediaItem } from './data/content';
 import type { FocusTarget, QualityMode, ZoneId } from './types/portfolio';
 import { soundEngine } from './utils/sound';
 import { detectSoftwareGl, hasWebGLSupport, resolveQualityTier } from './utils/webgl';
+
+const MemoSceneRoot = memo(SceneRoot);
 
 function getNearestZone(progress: number): ZoneId {
   let closest = ZONE_WAYPOINTS[0];
@@ -44,7 +46,6 @@ export default function App() {
   const [loaderDone, setLoaderDone] = useState(false);
 
   const [activeZone, setActiveZone] = useState<ZoneId>('hero');
-  const [scrollProgress, setScrollProgress] = useState(0);
   const scrollProgressRef = useRef(0);
   const lenisRef = useRef<Lenis | null>(null);
 
@@ -66,7 +67,7 @@ export default function App() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // Setup Lenis smooth inertia scroll when in 3D mode
+  // Setup Lenis smooth inertia scroll when in 3D mode (updates refs directly without React re-renders)
   useEffect(() => {
     if (fallback2D || reducedMotion) {
       lenisRef.current?.destroy();
@@ -75,7 +76,7 @@ export default function App() {
     }
 
     const lenis = new Lenis({
-      duration: 1.25,
+      duration: 1.15,
       smoothWheel: true,
       touchMultiplier: 1.4,
     });
@@ -85,8 +86,8 @@ export default function App() {
       const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
       const p = Math.min(1, Math.max(0, window.scrollY / maxScroll));
       scrollProgressRef.current = p;
-      setScrollProgress(p);
-      setActiveZone(getNearestZone(p));
+      const nextZone = getNearestZone(p);
+      setActiveZone((prev) => (prev === nextZone ? prev : nextZone));
     };
 
     lenis.on('scroll', updateFromScroll);
@@ -107,17 +108,17 @@ export default function App() {
 
   // Native scroll fallback listener when reducedMotion is on in 3D mode
   useEffect(() => {
-    if (fallback2D) return;
+    if (fallback2D || !reducedMotion) return;
     const onScroll = () => {
       const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
       const p = Math.min(1, Math.max(0, window.scrollY / maxScroll));
       scrollProgressRef.current = p;
-      setScrollProgress(p);
-      setActiveZone(getNearestZone(p));
+      const nextZone = getNearestZone(p);
+      setActiveZone((prev) => (prev === nextZone ? prev : nextZone));
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [fallback2D]);
+  }, [fallback2D, reducedMotion]);
 
   const jumpToZone = useCallback(
     (zoneId: ZoneId) => {
@@ -200,6 +201,45 @@ export default function App() {
     soundEngine.playTick(440);
   }, []);
 
+  const handleSceneReady = useCallback(() => setSceneReady(true), []);
+  const handleContextLost = useCallback(() => setFallback2D(true), []);
+
+  const handleFocusProject = useCallback((proj: CaseStudyProject, focus: FocusTarget) => {
+    soundEngine.playFocusChime();
+    setFocusTarget(focus);
+    setSelectedProject(proj);
+  }, []);
+
+  const handleSelectDevicePreview = useCallback((focus: FocusTarget) => {
+    soundEngine.playFocusChime();
+    setFocusTarget(focus);
+    setSelectedProject(DESIGN_PROJECTS[0]);
+  }, []);
+
+  const handleSelectJutima = useCallback(() => {
+    soundEngine.playTick(580);
+    jumpToZone('build');
+  }, [jumpToZone]);
+
+  const handleSelectMedia = useCallback((item: CreateMediaItem, focus: FocusTarget) => {
+    soundEngine.playFocusChime();
+    setFocusTarget(focus);
+    setSelectedMedia(item);
+  }, []);
+
+  const handleHudOpenProject = useCallback((proj: CaseStudyProject) => {
+    soundEngine.playFocusChime();
+    setSelectedProject(proj);
+  }, []);
+
+  const handleHudOpenMedia = useCallback((item: CreateMediaItem) => {
+    soundEngine.playFocusChime();
+    setSelectedMedia(item);
+  }, []);
+
+  const handleToggleFallback2D = useCallback(() => setFallback2D((v) => !v), []);
+  const handleToggleReducedMotion = useCallback(() => setReducedMotion((v) => !v), []);
+
   return (
     <>
       <Cursor enabled={!fallback2D && !reducedMotion} label={cursorLabel} />
@@ -230,34 +270,19 @@ export default function App() {
             <Loader sceneReady={sceneReady} onComplete={() => setLoaderDone(true)} />
           )}
 
-          <SceneRoot
+          <MemoSceneRoot
             quality={resolvedQuality}
             isSoftwareGl={isSoftwareGl}
             isMobile={isMobile}
             reducedMotion={reducedMotion}
             scrollProgressRef={scrollProgressRef}
             focusTarget={focusTarget}
-            onSceneReady={() => setSceneReady(true)}
-            onContextLost={() => setFallback2D(true)}
-            onFocusProject={(proj, focus) => {
-              soundEngine.playFocusChime();
-              setFocusTarget(focus);
-              setSelectedProject(proj);
-            }}
-            onSelectDevicePreview={(focus) => {
-              soundEngine.playFocusChime();
-              setFocusTarget(focus);
-              setSelectedProject(DESIGN_PROJECTS[0]);
-            }}
-            onSelectJutima={() => {
-              soundEngine.playTick(580);
-              jumpToZone('build');
-            }}
-            onSelectMedia={(item, focus) => {
-              soundEngine.playFocusChime();
-              setFocusTarget(focus);
-              setSelectedMedia(item);
-            }}
+            onSceneReady={handleSceneReady}
+            onContextLost={handleContextLost}
+            onFocusProject={handleFocusProject}
+            onSelectDevicePreview={handleSelectDevicePreview}
+            onSelectJutima={handleSelectJutima}
+            onSelectMedia={handleSelectMedia}
             onTriggerClapper={triggerClapperEasterEgg}
             onDownloadCv={handleDownloadCv}
             onHoverLabel={setCursorLabel}
@@ -265,16 +290,10 @@ export default function App() {
 
           <HudOverlay
             activeZone={activeZone}
-            scrollProgress={scrollProgress}
+            scrollProgressRef={scrollProgressRef}
             onJumpToZone={jumpToZone}
-            onOpenProject={(proj) => {
-              soundEngine.playFocusChime();
-              setSelectedProject(proj);
-            }}
-            onOpenMedia={(item) => {
-              soundEngine.playFocusChime();
-              setSelectedMedia(item);
-            }}
+            onOpenProject={handleHudOpenProject}
+            onOpenMedia={handleHudOpenMedia}
             onTriggerClapper={triggerClapperEasterEgg}
             onDownloadCv={handleDownloadCv}
             qualityMode={qualityMode}
@@ -283,9 +302,9 @@ export default function App() {
             audioEnabled={audioEnabled}
             onToggleAudio={handleToggleAudio}
             fallback2D={fallback2D}
-            onToggleFallback2D={() => setFallback2D((v) => !v)}
+            onToggleFallback2D={handleToggleFallback2D}
             reducedMotion={reducedMotion}
-            onToggleReducedMotion={() => setReducedMotion((v) => !v)}
+            onToggleReducedMotion={handleToggleReducedMotion}
           />
 
           {/* Continuous Scroll Track driving the 3D spline flight */}

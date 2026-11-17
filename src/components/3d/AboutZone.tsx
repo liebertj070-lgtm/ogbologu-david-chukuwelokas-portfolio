@@ -73,8 +73,7 @@ export function AboutZone({ reducedMotion }: AboutZoneProps) {
   return (
     <group position={[2.2, 0, 6.2]}>
       {/* Warm workbench lamp pool */}
-      <pointLight position={[-0.6, 3.1, 0.6]} color="#FFAE70" intensity={10} distance={9} decay={2} />
-      <pointLight position={[0.4, 2.2, 1.1]} color="#4DE1FF" intensity={6} distance={7} decay={2} />
+      <pointLight position={[-0.6, 3.1, 0.6]} color="#FFAE70" intensity={12} distance={10} decay={2} />
 
       {/* Composite Industrial Workbench (7 parts, grounded at Y=0) */}
       <group position={[0, 0, 0]}>

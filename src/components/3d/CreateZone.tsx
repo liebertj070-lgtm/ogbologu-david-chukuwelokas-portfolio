@@ -204,8 +204,7 @@ export function CreateZone({
 
   return (
     <group>
-      <pointLight position={[-3.2, 4.4, -34.5]} color="#FF6A1A" intensity={18} distance={15} decay={2} />
-      <pointLight position={[3.2, 4.4, -35.5]} color="#4DE1FF" intensity={16} distance={15} decay={2} />
+      <pointLight position={[0, 4.6, -34.8]} color="#FF9254" intensity={20} distance={16} decay={2} />
 
       {/* Curved Wall of Video & Graphics Monitors */}
       {CREATE_MEDIA_ITEMS.map((item) => (
